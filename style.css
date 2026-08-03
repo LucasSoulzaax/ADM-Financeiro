@@ -1,0 +1,104 @@
+* { box-sizing: border-box; font-family: Arial, sans-serif; }
+body { margin: 0; background: #f4f5f7; color: #222; }
+
+header {
+  background: #1e293b;
+  color: #fff;
+  padding: 16px 24px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.tabs {
+  display: flex;
+  background: #fff;
+  border-bottom: 1px solid #ddd;
+}
+
+.tabs button {
+  flex: 1;
+  padding: 14px;
+  border: none;
+  background: none;
+  cursor: pointer;
+  font-weight: 600;
+  color: #555;
+}
+
+.tabs button.active {
+  color: #1e293b;
+  border-bottom: 3px solid #1e293b;
+}
+
+main { padding: 24px; max-width: 900px; margin: 0 auto; }
+
+.tab-content { display: none; }
+.tab-content.active { display: block; }
+
+.card {
+  background: #fff;
+  border-radius: 8px;
+  padding: 16px 20px;
+  margin-bottom: 12px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.card.destaque { font-size: 1.1rem; font-weight: bold; }
+.card.destaque.positivo { color: #16a34a; }
+.card.destaque.negativo { color: #dc2626; }
+
+form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  background: #fff;
+  padding: 20px;
+  border-radius: 8px;
+  max-width: 400px;
+}
+
+input, select, button {
+  padding: 10px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  font-size: 14px;
+}
+
+button {
+  background: #1e293b;
+  color: #fff;
+  border: none;
+  cursor: pointer;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  background: #fff;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+th, td {
+  padding: 10px;
+  border-bottom: 1px solid #eee;
+  text-align: left;
+  font-size: 14px;
+}
+
+.status-pago { color: #16a34a; font-weight: bold; }
+.status-pendente { color: #ca8a04; font-weight: bold; }
+.status-urgente { color: #dc2626; font-weight: bold; }
+.status-cancelado { color: #6b7280; font-weight: bold; text-decoration: line-through; }
+
+#listaCategorias { list-style: none; padding: 0; }
+#listaCategorias li {
+  background: #fff;
+  padding: 8px 12px;
+  margin-bottom: 6px;
+  border-radius: 6px;
+}
