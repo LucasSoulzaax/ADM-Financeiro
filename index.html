@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Gerenciamento Financeiro</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header>
+  <h1>Gerenciador Financeiro</h1>
+  <input type="month" id="filtroMes">
+</header>
+
+<nav class="tabs">
+  <button data-tab="dashboard" class="active">Dashboard</button>
+  <button data-tab="inserir">Inserir</button>
+  <button data-tab="gastos">Transações</button>
+  <button data-tab="categorias">Categorias</button>
+  <button data-tab="exportar">Exportar TSV</button>
+</nav>
+
+<main>
+  <section id="dashboard" class="tab-content active">
+    <div class="card"><span>Ganhos do mês</span><strong id="totalGanhos">R$ 0,00</strong></div>
+    <div class="card"><span>Gastos do mês</span><strong id="totalGastos">R$ 0,00</strong></div>
+    <div class="card"><span>Pendências</span><strong id="totalPendentes">R$ 0,00</strong></div>
+    <div class="card destaque"><span id="mensagemSaldo">Selecione um mês</span></div>
+  </section>
+
+  <section id="inserir" class="tab-content">
+    <h2>Nova Transação</h2>
+    <form id="formTransacao">
+      <input type="text" id="descricao" placeholder="Descrição" required>
+      <input type="number" id="valor" placeholder="Valor (R$)" step="0.01" required>
+      <select id="tipo">
+        <option value="gasto">Gasto</option>
+        <option value="ganho">Ganho</option>
+      </select>
+      <select id="natureza">
+        <option value="avulso">Avulso</option>
+        <option value="fixo">Fixo</option>
+      </select>
+      <select id="status">
+        <option value="pendente">Pagamento pendente</option>
+        <option value="pago">Pago</option>
+        <option value="urgente">Pagamento urgente</option>
+        <option value="cancelado">Cancelado</option>
+      </select>
+      <select id="categoria_id"></select>
+      <input type="date" id="data_transacao" required>
+      <button type="submit">Salvar</button>
+    </form>
+  </section>
+
+  <section id="gastos" class="tab-content">
+    <h2>Transações do mês</h2>
+    <table id="tabelaTransacoes">
+      <thead>
+        <tr><th>Descrição</th><th>Valor</th><th>Tipo</th><th>Natureza</th><th>Status</th><th>Categoria</th><th>Data</th><th>Ações</th></tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </section>
+
+  <section id="categorias" class="tab-content">
+    <h2>Categorias</h2>
+    <form id="formCategoria">
+      <input type="text" id="nomeCategoria" placeholder="Nome da categoria" required>
+      <select id="tipoCategoria">
+        <option value="gasto">Gasto</option>
+        <option value="ganho">Ganho</option>
+      </select>
+      <button type="submit">Adicionar</button>
+    </form>
+    <ul id="listaCategorias"></ul>
+  </section>
+
+  <section id="exportar" class="tab-content">
+    <h2>Exportar dados</h2>
+    <p>Gera um arquivo TSV com as transações do mês selecionado.</p>
+    <button id="btnExportarTSV">Exportar TSV</button>
+  </section>
+</main>
+
+<script src="script.js"></script>
+</body>
+</html>
