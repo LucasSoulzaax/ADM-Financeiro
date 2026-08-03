@@ -1,88 +1,231 @@
 <!DOCTYPE html>
-<html lang="pt-br">
+<html lang="pt-BR">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Gerenciamento Financeiro</title>
-<link rel="stylesheet" href="style.css">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Lunay Finanças</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-<header>
-  <h1>Gerenciador Financeiro</h1>
-  <input type="month" id="filtroMes">
-</header>
+  <div class="app-shell">
+    <header class="topbar">
+      <div class="brand-block">
+        <h1 class="brand-title">Lunay</h1>
+        <p class="brand-subtitle">finanças</p>
+      </div>
 
-<nav class="tabs">
-  <button data-tab="dashboard" class="active">Dashboard</button>
-  <button data-tab="inserir">Inserir</button>
-  <button data-tab="gastos">Transações</button>
-  <button data-tab="categorias">Categorias</button>
-  <button data-tab="exportar">Exportar TSV</button>
-</nav>
+      <div class="topbar-actions">
+        <input type="month" id="filtroMes" class="month-picker" />
+        <div class="avatar">LS</div>
+      </div>
+    </header>
 
-<main>
-  <section id="dashboard" class="tab-content active">
-    <div class="card"><span>Ganhos do mês</span><strong id="totalGanhos">R$ 0,00</strong></div>
-    <div class="card"><span>Gastos do mês</span><strong id="totalGastos">R$ 0,00</strong></div>
-    <div class="card"><span>Pendências</span><strong id="totalPendentes">R$ 0,00</strong></div>
-    <div class="card destaque"><span id="mensagemSaldo">Selecione um mês</span></div>
-  </section>
+    <main class="app-main">
+      <section id="screen-dashboard" class="screen active">
+        <div class="welcome-card gradient-soft">
+          <div class="welcome-copy">
+            <p class="eyebrow">Olá!</p>
+            <h2>Seu resumo financeiro de hoje</h2>
+            <p>
+              Acompanhe ganhos, gastos e o saldo do mês em um visual mais simples e organizado.
+            </p>
+          </div>
+          <div class="wallet-illustration">
+            <div class="wallet-body"></div>
+            <div class="wallet-pocket"></div>
+            <div class="wallet-coin"></div>
+          </div>
+        </div>
 
-  <section id="inserir" class="tab-content">
-    <h2>Nova Transação</h2>
-    <form id="formTransacao">
-      <input type="text" id="descricao" placeholder="Descrição" required>
-      <input type="number" id="valor" placeholder="Valor (R$)" step="0.01" required>
-      <select id="tipo">
-        <option value="gasto">Gasto</option>
-        <option value="ganho">Ganho</option>
-      </select>
-      <select id="natureza">
-        <option value="avulso">Avulso</option>
-        <option value="fixo">Fixo</option>
-      </select>
-      <select id="status">
-        <option value="pendente">Pagamento pendente</option>
-        <option value="pago">Pago</option>
-        <option value="urgente">Pagamento urgente</option>
-        <option value="cancelado">Cancelado</option>
-      </select>
-      <select id="categoria_id"></select>
-      <input type="date" id="data_transacao" required>
-      <button type="submit">Salvar</button>
-    </form>
-  </section>
+        <section class="panel">
+          <div class="panel-head">
+            <h3>Resumo geral</h3>
+            <span class="panel-icon">◌</span>
+          </div>
 
-  <section id="gastos" class="tab-content">
-    <h2>Transações do mês</h2>
-    <table id="tabelaTransacoes">
-      <thead>
-        <tr><th>Descrição</th><th>Valor</th><th>Tipo</th><th>Natureza</th><th>Status</th><th>Categoria</th><th>Data</th><th>Ações</th></tr>
-      </thead>
-      <tbody></tbody>
-    </table>
-  </section>
+          <div class="summary-list">
+            <div class="summary-row">
+              <span class="summary-label income">Receitas</span>
+              <strong id="totalGanhos">R$ 0,00</strong>
+            </div>
+            <div class="summary-row">
+              <span class="summary-label expense">Despesas</span>
+              <strong id="totalGastos">R$ 0,00</strong>
+            </div>
+            <div class="summary-row">
+              <span class="summary-label balance">Saldo</span>
+              <strong id="saldoResumo">R$ 0,00</strong>
+            </div>
+          </div>
+        </section>
 
-  <section id="categorias" class="tab-content">
-    <h2>Categorias</h2>
-    <form id="formCategoria">
-      <input type="text" id="nomeCategoria" placeholder="Nome da categoria" required>
-      <select id="tipoCategoria">
-        <option value="gasto">Gasto</option>
-        <option value="ganho">Ganho</option>
-      </select>
-      <button type="submit">Adicionar</button>
-    </form>
-    <ul id="listaCategorias"></ul>
-  </section>
+        <section class="panel tip-card">
+          <div class="tip-icon">✦</div>
+          <div>
+            <h3>Assistente financeiro</h3>
+            <p id="mensagemSaldo">Selecione um mês para analisar seu saldo.</p>
+          </div>
+        </section>
 
-  <section id="exportar" class="tab-content">
-    <h2>Exportar dados</h2>
-    <p>Gera um arquivo TSV com as transações do mês selecionado.</p>
-    <button id="btnExportarTSV">Exportar TSV</button>
-  </section>
-</main>
+        <section class="panel pending-card">
+          <div class="panel-head">
+            <h3>Pendências do mês</h3>
+          </div>
+          <div class="summary-row pending-row">
+            <span class="summary-label urgent">Pagamentos pendentes/urgentes</span>
+            <strong id="totalPendentes">R$ 0,00</strong>
+          </div>
+        </section>
+      </section>
 
-<script src="script.js"></script>
+      <section id="screen-transacoes" class="screen">
+        <div class="section-header">
+          <h2>Transações</h2>
+          <button class="ghost-btn" id="btnRefreshTransacoes" type="button">Atualizar</button>
+        </div>
+
+        <div class="filter-pills">
+          <button class="pill active" data-filter="todas" type="button">Todas</button>
+          <button class="pill" data-filter="ganho" type="button">Receitas</button>
+          <button class="pill" data-filter="gasto" type="button">Despesas</button>
+        </div>
+
+        <div class="list-stack" id="listaTransacoes"></div>
+      </section>
+
+      <section id="screen-nova" class="screen">
+        <div class="section-header">
+          <h2>Nova transação</h2>
+        </div>
+
+        <div class="type-switch">
+          <button class="type-btn active" type="button" data-type-choice="ganho">Receita</button>
+          <button class="type-btn" type="button" data-type-choice="gasto">Despesa</button>
+        </div>
+
+        <form id="formTransacao" class="soft-form">
+          <label class="field">
+            <span>Descrição</span>
+            <input type="text" id="descricao" placeholder="Ex: Salário, Mercado..." required />
+          </label>
+
+          <label class="field">
+            <span>Valor</span>
+            <input type="number" id="valor" placeholder="R$ 0,00" step="0.01" required />
+          </label>
+
+          <label class="field">
+            <span>Tipo</span>
+            <select id="tipo">
+              <option value="ganho">Ganho</option>
+              <option value="gasto">Gasto</option>
+            </select>
+          </label>
+
+          <label class="field">
+            <span>Natureza</span>
+            <select id="natureza">
+              <option value="avulso">Avulso</option>
+              <option value="fixo">Fixo</option>
+            </select>
+          </label>
+
+          <label class="field">
+            <span>Status</span>
+            <select id="status">
+              <option value="pendente">Pagamento pendente</option>
+              <option value="pago">Pago</option>
+              <option value="urgente">Pagamento urgente</option>
+              <option value="cancelado">Cancelado</option>
+            </select>
+          </label>
+
+          <label class="field">
+            <span>Categoria</span>
+            <select id="categoria_id"></select>
+          </label>
+
+          <label class="field">
+            <span>Data</span>
+            <input type="date" id="data_transacao" required />
+          </label>
+
+          <button type="submit" class="primary-btn">Salvar transação</button>
+        </form>
+      </section>
+
+      <section id="screen-categorias" class="screen">
+        <div class="section-header">
+          <h2>Categorias</h2>
+        </div>
+
+        <form id="formCategoria" class="soft-form compact">
+          <label class="field">
+            <span>Nome da categoria</span>
+            <input type="text" id="nomeCategoria" placeholder="Ex: Alimentação" required />
+          </label>
+
+          <label class="field">
+            <span>Tipo</span>
+            <select id="tipoCategoria">
+              <option value="gasto">Gasto</option>
+              <option value="ganho">Ganho</option>
+            </select>
+          </label>
+
+          <button type="submit" class="primary-btn">Adicionar categoria</button>
+        </form>
+
+        <div class="category-list" id="listaCategorias"></div>
+      </section>
+
+      <section id="screen-mais" class="screen">
+        <div class="section-header">
+          <h2>Mais opções</h2>
+        </div>
+
+        <div class="panel menu-card">
+          <button id="btnExportarTSV" class="menu-action" type="button">
+            <span>Exportar TSV do mês</span>
+            <strong>Baixar</strong>
+          </button>
+        </div>
+
+        <div class="panel menu-card">
+          <div class="menu-info">
+            <span>Status do mês</span>
+            <strong id="statusMesInfo">Aguardando dados</strong>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <nav class="bottom-nav">
+      <button class="nav-item active" data-screen="dashboard" type="button">
+        <span class="nav-icon">⌂</span>
+        <span>Início</span>
+      </button>
+      <button class="nav-item" data-screen="transacoes" type="button">
+        <span class="nav-icon">≣</span>
+        <span>Transações</span>
+      </button>
+      <button class="nav-item fab-item" data-screen="nova" type="button">
+        <span class="fab-circle">＋</span>
+      </button>
+      <button class="nav-item" data-screen="categorias" type="button">
+        <span class="nav-icon">◫</span>
+        <span>Categorias</span>
+      </button>
+      <button class="nav-item" data-screen="mais" type="button">
+        <span class="nav-icon">☰</span>
+        <span>Mais</span>
+      </button>
+    </nav>
+  </div>
+
+  <script src="script.js"></script>
 </body>
 </html>
