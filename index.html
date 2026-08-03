@@ -119,15 +119,15 @@
 
           <label class="field">
             <span>Tipo</span>
-            <select id="tipo">
-              <option value="ganho">Ganho</option>
+            <select id="tipo" required>
+              <option value="ganho" selected>Ganho</option>
               <option value="gasto">Gasto</option>
             </select>
           </label>
 
           <label class="field">
             <span>Natureza</span>
-            <select id="natureza">
+            <select id="natureza" required>
               <option value="avulso">Avulso</option>
               <option value="fixo">Fixo</option>
             </select>
@@ -135,7 +135,7 @@
 
           <label class="field">
             <span>Status</span>
-            <select id="status">
+            <select id="status" required>
               <option value="pendente">Pagamento pendente</option>
               <option value="pago">Pago</option>
               <option value="urgente">Pagamento urgente</option>
@@ -145,7 +145,9 @@
 
           <label class="field">
             <span>Categoria</span>
-            <select id="categoria_id"></select>
+            <select id="categoria_id" required>
+              <option value="">Selecione uma categoria</option>
+            </select>
           </label>
 
           <label class="field">
@@ -169,8 +171,9 @@
           </label>
 
           <label class="field">
-            <span>Tipo</span>
-            <select id="tipoCategoria">
+            <span>Tipo da categoria</span>
+            <select id="tipoCategoria" required>
+              <option value="" selected disabled>Selecione o tipo</option>
               <option value="gasto">Gasto</option>
               <option value="ganho">Ganho</option>
             </select>
