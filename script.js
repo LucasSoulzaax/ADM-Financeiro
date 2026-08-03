@@ -5,14 +5,28 @@ let transacoesCache = [];
 let categoriasCache = [];
 let filtroAtual = 'todas';
 
+let cartao = {
+  nome: 'Cartão principal',
+  final: '4821',
+  limite: 3000,
+  fechamento: 10,
+  vencimento: 17,
+  pagoFatura: 0
+};
+
+let comprasCartao = [];
+
 const filtroMes = document.getElementById('filtroMes');
 const listaTransacoes = document.getElementById('listaTransacoes');
 const listaCategorias = document.getElementById('listaCategorias');
 const statusMesInfo = document.getElementById('statusMesInfo');
 const selectTipo = document.getElementById('tipo');
 const selectCategoria = document.getElementById('categoria_id');
+const listaComprasCartao = document.getElementById('listaComprasCartao');
 
 filtroMes.value = mesAtual;
+document.getElementById('data_transacao').value = new Date().toISOString().split('T')[0];
+document.getElementById('dataCompraCartao').value = new Date().toISOString().split('T')[0];
 
 document.querySelectorAll('.nav-item').forEach(btn => {
   btn.addEventListener('click', () => {
@@ -30,6 +44,7 @@ document.querySelectorAll('.nav-item').forEach(btn => {
 filtroMes.addEventListener('change', e => {
   mesAtual = e.target.value;
   atualizarTudo();
+  atualizarCartaoUI();
 });
 
 document.getElementById('btnRefreshTransacoes').addEventListener('click', () => {
@@ -214,6 +229,7 @@ document.getElementById('formTransacao').addEventListener('submit', async e => {
     });
 
     e.target.reset();
+    document.getElementById('data_transacao').value = new Date().toISOString().split('T')[0];
 
     selectTipo.value = 'ganho';
     sincronizarBotoesTipo('ganho');
@@ -273,6 +289,152 @@ document.getElementById('btnExportarTSV').addEventListener('click', async () => 
   }
 });
 
+document.getElementById('formConfigCartao').addEventListener('submit', e => {
+  e.preventDefault();
+
+  const nome = document.getElementById('inputNomeCartao').value.trim();
+  const final = document.getElementById('inputFinalCartao').value.trim();
+  const limite = parseFloat(document.getElementById('inputLimiteCartao').value);
+  const fechamento = parseInt(document.getElementById('inputFechamentoCartao').value, 10);
+  const vencimento = parseInt(document.getElementById('inputVencimentoCartao').value, 10);
+
+  if (nome) cartao.nome = nome;
+  if (final) cartao.final = final;
+  if (!Number.isNaN(limite)) cartao.limite = limite;
+  if (!Number.isNaN(fechamento)) cartao.fechamento = fechamento;
+  if (!Number.isNaN(vencimento)) cartao.vencimento = vencimento;
+
+  atualizarCartaoUI();
+  alert('Configuração do cartão atualizada.');
+});
+
+document.getElementById('formCompraCartao').addEventListener('submit', e => {
+  e.preventDefault();
+
+  const descricao = document.getElementById('descricaoCompraCartao').value.trim();
+  const valor = parseFloat(document.getElementById('valorCompraCartao').value);
+  const categoria = document.getElementById('categoriaCompraCartao').value.trim();
+  const data = document.getElementById('dataCompraCartao').value;
+
+  if (!descricao || Number.isNaN(valor) || !categoria || !data) {
+    alert('Preencha todos os dados da compra.');
+    return;
+  }
+
+  comprasCartao.unshift({
+    id: Date.now(),
+    descricao,
+    valor,
+    categoria,
+    data
+  });
+
+  e.target.reset();
+  document.getElementById('dataCompraCartao').value = new Date().toISOString().split('T')[0];
+  atualizarCartaoUI();
+});
+
+document.getElementById('btnPagarFatura').addEventListener('click', () => {
+  const fatura = calcularFaturaAtual();
+  const restante = Math.max(fatura - cartao.pagoFatura, 0);
+
+  if (restante <= 0) {
+    alert('A fatura atual já está quitada.');
+    return;
+  }
+
+  const valor = prompt(`Informe o valor pago da fatura atual (restante: ${formatMoney(restante)})`);
+
+  if (valor === null) return;
+
+  const pagamento = parseFloat(valor.replace(',', '.'));
+
+  if (Number.isNaN(pagamento) || pagamento <= 0) {
+    alert('Informe um valor válido.');
+    return;
+  }
+
+  cartao.pagoFatura += pagamento;
+
+  if (cartao.pagoFatura > fatura) {
+    cartao.pagoFatura = fatura;
+  }
+
+  atualizarCartaoUI();
+});
+
+function atualizarCartaoUI() {
+  document.getElementById('nomeCartao').textContent = cartao.nome;
+  document.getElementById('numeroCartao').textContent = `•••• •••• •••• ${cartao.final}`;
+  document.getElementById('diaFechamento').textContent = cartao.fechamento;
+  document.getElementById('diaVencimento').textContent = cartao.vencimento;
+
+  document.getElementById('inputNomeCartao').value = cartao.nome;
+  document.getElementById('inputFinalCartao').value = cartao.final;
+  document.getElementById('inputLimiteCartao').value = cartao.limite;
+  document.getElementById('inputFechamentoCartao').value = cartao.fechamento;
+  document.getElementById('inputVencimentoCartao').value = cartao.vencimento;
+
+  const fatura = calcularFaturaAtual();
+  const pago = Math.min(cartao.pagoFatura, fatura);
+  const disponivel = Math.max(cartao.limite - fatura, 0);
+  const uso = cartao.limite > 0 ? ((fatura / cartao.limite) * 100) : 0;
+
+  document.getElementById('faturaAtual').textContent = formatMoney(fatura);
+  document.getElementById('limiteDisponivel').textContent = formatMoney(disponivel);
+  document.getElementById('limiteUsado').textContent = `${uso.toFixed(0)}%`;
+  document.getElementById('valorPagoFatura').textContent = formatMoney(pago);
+
+  document.getElementById('resumoFaturaCartao').textContent = formatMoney(fatura);
+  document.getElementById('resumoLimiteDisponivel').textContent = formatMoney(disponivel);
+
+  renderizarComprasCartao();
+}
+
+function calcularFaturaAtual() {
+  const [ano, mes] = mesAtual.split('-').map(Number);
+
+  return comprasCartao
+    .filter(compra => {
+      const data = new Date(`${compra.data}T00:00:00`);
+      return data.getFullYear() === ano && (data.getMonth() + 1) === mes;
+    })
+    .reduce((acc, item) => acc + Number(item.valor || 0), 0);
+}
+
+function renderizarComprasCartao() {
+  const [ano, mes] = mesAtual.split('-').map(Number);
+
+  const listaMes = comprasCartao.filter(compra => {
+    const data = new Date(`${compra.data}T00:00:00`);
+    return data.getFullYear() === ano && (data.getMonth() + 1) === mes;
+  });
+
+  if (!listaMes.length) {
+    listaComprasCartao.innerHTML = `<div class="empty-state">Nenhuma compra lançada no cartão neste mês.</div>`;
+    return;
+  }
+
+  listaComprasCartao.innerHTML = listaMes.map(item => `
+    <article class="card-purchase-item">
+      <div class="tx-icon cartao">💳</div>
+
+      <div class="tx-main">
+        <h4>${item.descricao}</h4>
+        <p class="tx-meta">
+          <span>${item.categoria}</span>
+          <span>•</span>
+          <span>${new Date(`${item.data}T00:00:00`).toLocaleDateString('pt-BR')}</span>
+        </p>
+      </div>
+
+      <div class="tx-value">
+        <strong class="cartao">${formatMoney(item.valor)}</strong>
+      </div>
+    </article>
+  `).join('');
+}
+
 function formatMoney(value) {
   return Number(value).toLocaleString('pt-BR', {
     style: 'currency',
@@ -300,3 +462,4 @@ async function atualizarTudo() {
 
 sincronizarBotoesTipo('ganho');
 atualizarTudo();
+atualizarCartaoUI();
