@@ -5,16 +5,21 @@ let transacoesCache = [];
 let categoriasCache = [];
 let filtroAtual = 'todas';
 
-let cartao = {
-  nome: 'Cartão principal',
-  final: '4821',
-  limite: 3000,
-  fechamento: 10,
-  vencimento: 17,
-  pagoFatura: 0
-};
+let cartoes = [
+  {
+    id: 1,
+    nome: 'Nubank',
+    apelido: 'Roxinho da Mari',
+    final: '4821',
+    limite: 3000,
+    fechamento: 10,
+    vencimento: 17,
+    pagoFatura: 0
+  }
+];
 
 let comprasCartao = [];
+let cartaoAtivoId = 1;
 
 const filtroMes = document.getElementById('filtroMes');
 const listaTransacoes = document.getElementById('listaTransacoes');
@@ -23,6 +28,7 @@ const statusMesInfo = document.getElementById('statusMesInfo');
 const selectTipo = document.getElementById('tipo');
 const selectCategoria = document.getElementById('categoria_id');
 const listaComprasCartao = document.getElementById('listaComprasCartao');
+const listaCartoes = document.getElementById('listaCartoes');
 
 filtroMes.value = mesAtual;
 document.getElementById('data_transacao').value = new Date().toISOString().split('T')[0];
@@ -82,18 +88,13 @@ async function carregarDashboard() {
     const res = await fetch(`${API}/dashboard/${mesAtual}`);
     const data = await res.json();
 
-    const ganhos = Number(data.ganhos || 0);
-    const gastos = Number(data.gastos || 0);
-    const pendentes = Number(data.pendentes || 0);
-    const saldo = Number(data.saldo || 0);
-
-    document.getElementById('totalGanhos').textContent = formatMoney(ganhos);
-    document.getElementById('totalGastos').textContent = formatMoney(gastos);
-    document.getElementById('totalPendentes').textContent = formatMoney(pendentes);
-    document.getElementById('saldoResumo').textContent = formatMoney(saldo);
+    document.getElementById('totalGanhos').textContent = formatMoney(data.ganhos || 0);
+    document.getElementById('totalGastos').textContent = formatMoney(data.gastos || 0);
+    document.getElementById('totalPendentes').textContent = formatMoney(data.pendentes || 0);
+    document.getElementById('saldoResumo').textContent = formatMoney(data.saldo || 0);
     document.getElementById('mensagemSaldo').textContent = data.mensagem || 'Sem análise disponível.';
-    statusMesInfo.textContent = saldo >= 0 ? 'Mês positivo' : 'Mês negativo';
-  } catch (error) {
+    statusMesInfo.textContent = Number(data.saldo || 0) >= 0 ? 'Mês positivo' : 'Mês negativo';
+  } catch {
     document.getElementById('mensagemSaldo').textContent = 'Não foi possível carregar o dashboard.';
     statusMesInfo.textContent = 'Erro ao carregar';
   }
@@ -103,10 +104,9 @@ async function carregarCategorias() {
   try {
     const res = await fetch(`${API}/categorias/lista`);
     categoriasCache = await res.json();
-
     renderizarListaCategorias();
     preencherCategoriasPorTipo(selectTipo.value || 'ganho');
-  } catch (error) {
+  } catch {
     listaCategorias.innerHTML = `<div class="empty-state">Erro ao carregar categorias.</div>`;
     selectCategoria.innerHTML = `<option value="">Erro ao carregar categorias</option>`;
   }
@@ -151,7 +151,7 @@ async function carregarTransacoes() {
     const res = await fetch(`${API}?mes=${mesAtual}`);
     transacoesCache = await res.json();
     renderizarTransacoes();
-  } catch (error) {
+  } catch {
     listaTransacoes.innerHTML = `<div class="empty-state">Erro ao carregar transações.</div>`;
   }
 }
@@ -178,7 +178,6 @@ function renderizarTransacoes() {
         <div class="tx-icon ${item.tipo}">
           ${isGanho ? '↗' : '↘'}
         </div>
-
         <div class="tx-main">
           <h4>${item.descricao}</h4>
           <p class="tx-meta">
@@ -189,7 +188,6 @@ function renderizarTransacoes() {
             <span>${item.natureza}</span>
           </p>
         </div>
-
         <div class="tx-value">
           <strong class="${item.tipo}">
             ${isGanho ? '' : '- '}${formatMoney(valorNumero)}
@@ -205,7 +203,6 @@ document.getElementById('formTransacao').addEventListener('submit', async e => {
   e.preventDefault();
 
   const categoriaSelecionada = selectCategoria.value;
-
   if (!categoriaSelecionada) {
     alert('Selecione uma categoria antes de salvar.');
     return;
@@ -230,7 +227,6 @@ document.getElementById('formTransacao').addEventListener('submit', async e => {
 
     e.target.reset();
     document.getElementById('data_transacao').value = new Date().toISOString().split('T')[0];
-
     selectTipo.value = 'ganho';
     sincronizarBotoesTipo('ganho');
     preencherCategoriasPorTipo('ganho');
@@ -241,7 +237,7 @@ document.getElementById('formTransacao').addEventListener('submit', async e => {
     document.querySelector('.nav-item[data-screen="transacoes"]').classList.add('active');
     document.querySelectorAll('.screen').forEach(section => section.classList.remove('active'));
     document.getElementById('screen-transacoes').classList.add('active');
-  } catch (error) {
+  } catch {
     alert('Erro ao salvar transação.');
   }
 });
@@ -257,19 +253,17 @@ document.getElementById('formCategoria').addEventListener('submit', async e => {
     return;
   }
 
-  const body = { nome, tipo };
-
   try {
     await fetch(`${API}/categorias`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body)
+      body: JSON.stringify({ nome, tipo })
     });
 
     e.target.reset();
     document.getElementById('tipoCategoria').value = '';
     await carregarCategorias();
-  } catch (error) {
+  } catch {
     alert('Erro ao adicionar categoria.');
   }
 });
@@ -284,32 +278,44 @@ document.getElementById('btnExportarTSV').addEventListener('click', async () => 
     a.download = `financeiro_${mesAtual}.tsv`;
     a.click();
     URL.revokeObjectURL(url);
-  } catch (error) {
+  } catch {
     alert('Erro ao exportar TSV.');
   }
 });
 
-document.getElementById('formConfigCartao').addEventListener('submit', e => {
+document.getElementById('formNovoCartao').addEventListener('submit', e => {
   e.preventDefault();
 
-  const nome = document.getElementById('inputNomeCartao').value.trim();
-  const final = document.getElementById('inputFinalCartao').value.trim();
-  const limite = parseFloat(document.getElementById('inputLimiteCartao').value);
-  const fechamento = parseInt(document.getElementById('inputFechamentoCartao').value, 10);
-  const vencimento = parseInt(document.getElementById('inputVencimentoCartao').value, 10);
+  const novoCartao = {
+    id: Date.now(),
+    nome: document.getElementById('inputNomeCartao').value.trim(),
+    apelido: document.getElementById('inputApelidoCartao').value.trim(),
+    final: document.getElementById('inputFinalCartao').value.trim(),
+    limite: parseFloat(document.getElementById('inputLimiteCartao').value),
+    fechamento: parseInt(document.getElementById('inputFechamentoCartao').value, 10),
+    vencimento: parseInt(document.getElementById('inputVencimentoCartao').value, 10),
+    pagoFatura: 0
+  };
 
-  if (nome) cartao.nome = nome;
-  if (final) cartao.final = final;
-  if (!Number.isNaN(limite)) cartao.limite = limite;
-  if (!Number.isNaN(fechamento)) cartao.fechamento = fechamento;
-  if (!Number.isNaN(vencimento)) cartao.vencimento = vencimento;
-
+  cartoes.unshift(novoCartao);
+  cartaoAtivoId = novoCartao.id;
+  e.target.reset();
+  renderizarListaCartoes();
   atualizarCartaoUI();
-  alert('Configuração do cartão atualizada.');
+});
+
+document.getElementById('btnNovoCartao').addEventListener('click', () => {
+  document.getElementById('inputNomeCartao').focus();
 });
 
 document.getElementById('formCompraCartao').addEventListener('submit', e => {
   e.preventDefault();
+
+  const cartaoAtivo = getCartaoAtivo();
+  if (!cartaoAtivo) {
+    alert('Cadastre um cartão primeiro.');
+    return;
+  }
 
   const descricao = document.getElementById('descricaoCompraCartao').value.trim();
   const valor = parseFloat(document.getElementById('valorCompraCartao').value);
@@ -323,6 +329,7 @@ document.getElementById('formCompraCartao').addEventListener('submit', e => {
 
   comprasCartao.unshift({
     id: Date.now(),
+    cardId: cartaoAtivo.id,
     descricao,
     valor,
     categoria,
@@ -335,7 +342,13 @@ document.getElementById('formCompraCartao').addEventListener('submit', e => {
 });
 
 document.getElementById('btnPagarFatura').addEventListener('click', () => {
-  const fatura = calcularFaturaAtual();
+  const cartao = getCartaoAtivo();
+  if (!cartao) {
+    alert('Nenhum cartão selecionado.');
+    return;
+  }
+
+  const fatura = calcularFaturaAtual(cartao.id);
   const restante = Math.max(fatura - cartao.pagoFatura, 0);
 
   if (restante <= 0) {
@@ -344,7 +357,6 @@ document.getElementById('btnPagarFatura').addEventListener('click', () => {
   }
 
   const valor = prompt(`Informe o valor pago da fatura atual (restante: ${formatMoney(restante)})`);
-
   if (valor === null) return;
 
   const pagamento = parseFloat(valor.replace(',', '.'));
@@ -355,7 +367,6 @@ document.getElementById('btnPagarFatura').addEventListener('click', () => {
   }
 
   cartao.pagoFatura += pagamento;
-
   if (cartao.pagoFatura > fatura) {
     cartao.pagoFatura = fatura;
   }
@@ -363,19 +374,93 @@ document.getElementById('btnPagarFatura').addEventListener('click', () => {
   atualizarCartaoUI();
 });
 
+function getCartaoAtivo() {
+  return cartoes.find(c => c.id === cartaoAtivoId) || null;
+}
+
+function renderizarListaCartoes() {
+  if (!cartoes.length) {
+    listaCartoes.innerHTML = `<div class="empty-state">Nenhum cartão cadastrado.</div>`;
+    return;
+  }
+
+  listaCartoes.innerHTML = cartoes.map(cartao => {
+    const fatura = calcularFaturaAtual(cartao.id);
+    const disponivel = Math.max(cartao.limite - fatura, 0);
+
+    return `
+      <div class="mini-card-item ${cartao.id === cartaoAtivoId ? 'active' : ''}">
+        <div class="mini-card-top">
+          <strong>${cartao.nome}</strong>
+          <div class="card-actions">
+            <button class="tiny-btn" type="button" onclick="selecionarCartao(${cartao.id})">Abrir</button>
+            <button class="tiny-btn danger" type="button" onclick="removerCartao(${cartao.id})">Remover</button>
+          </div>
+        </div>
+        <p class="mini-card-sub">${cartao.apelido} • Final ${cartao.final}</p>
+        <div class="mini-card-bottom">
+          <span>Fatura: <strong>${formatMoney(fatura)}</strong></span>
+          <span>Disponível: <strong>${formatMoney(disponivel)}</strong></span>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+function selecionarCartao(id) {
+  cartaoAtivoId = id;
+  renderizarListaCartoes();
+  atualizarCartaoUI();
+}
+
+function removerCartao(id) {
+  const confirmar = confirm('Deseja realmente remover este cartão?');
+  if (!confirmar) return;
+
+  cartoes = cartoes.filter(c => c.id !== id);
+  comprasCartao = comprasCartao.filter(c => c.cardId !== id);
+
+  if (!cartoes.length) {
+    cartaoAtivoId = null;
+  } else if (!cartoes.some(c => c.id === cartaoAtivoId)) {
+    cartaoAtivoId = cartoes[0].id;
+  }
+
+  renderizarListaCartoes();
+  atualizarCartaoUI();
+}
+
+window.selecionarCartao = selecionarCartao;
+window.removerCartao = removerCartao;
+
 function atualizarCartaoUI() {
+  renderizarListaCartoes();
+
+  const cartao = getCartaoAtivo();
+
+  if (!cartao) {
+    document.getElementById('nomeCartao').textContent = 'Sem cartão';
+    document.getElementById('apelidoCartao').textContent = 'Cadastre um cartão';
+    document.getElementById('numeroCartao').textContent = '•••• •••• •••• ••••';
+    document.getElementById('diaFechamento').textContent = '--';
+    document.getElementById('diaVencimento').textContent = '--';
+    document.getElementById('faturaAtual').textContent = formatMoney(0);
+    document.getElementById('limiteDisponivel').textContent = formatMoney(0);
+    document.getElementById('limiteUsado').textContent = '0%';
+    document.getElementById('valorPagoFatura').textContent = formatMoney(0);
+    document.getElementById('resumoFaturaCartao').textContent = formatMoney(0);
+    document.getElementById('resumoLimiteDisponivel').textContent = formatMoney(0);
+    listaComprasCartao.innerHTML = `<div class="empty-state">Cadastre um cartão para começar.</div>`;
+    return;
+  }
+
   document.getElementById('nomeCartao').textContent = cartao.nome;
+  document.getElementById('apelidoCartao').textContent = cartao.apelido;
   document.getElementById('numeroCartao').textContent = `•••• •••• •••• ${cartao.final}`;
   document.getElementById('diaFechamento').textContent = cartao.fechamento;
   document.getElementById('diaVencimento').textContent = cartao.vencimento;
 
-  document.getElementById('inputNomeCartao').value = cartao.nome;
-  document.getElementById('inputFinalCartao').value = cartao.final;
-  document.getElementById('inputLimiteCartao').value = cartao.limite;
-  document.getElementById('inputFechamentoCartao').value = cartao.fechamento;
-  document.getElementById('inputVencimentoCartao').value = cartao.vencimento;
-
-  const fatura = calcularFaturaAtual();
+  const fatura = calcularFaturaAtual(cartao.id);
   const pago = Math.min(cartao.pagoFatura, fatura);
   const disponivel = Math.max(cartao.limite - fatura, 0);
   const uso = cartao.limite > 0 ? ((fatura / cartao.limite) * 100) : 0;
@@ -384,41 +469,43 @@ function atualizarCartaoUI() {
   document.getElementById('limiteDisponivel').textContent = formatMoney(disponivel);
   document.getElementById('limiteUsado').textContent = `${uso.toFixed(0)}%`;
   document.getElementById('valorPagoFatura').textContent = formatMoney(pago);
-
   document.getElementById('resumoFaturaCartao').textContent = formatMoney(fatura);
   document.getElementById('resumoLimiteDisponivel').textContent = formatMoney(disponivel);
 
-  renderizarComprasCartao();
+  renderizarComprasCartao(cartao.id);
 }
 
-function calcularFaturaAtual() {
+function calcularFaturaAtual(cardId) {
   const [ano, mes] = mesAtual.split('-').map(Number);
 
   return comprasCartao
     .filter(compra => {
       const data = new Date(`${compra.data}T00:00:00`);
-      return data.getFullYear() === ano && (data.getMonth() + 1) === mes;
+      return compra.cardId === cardId &&
+        data.getFullYear() === ano &&
+        (data.getMonth() + 1) === mes;
     })
     .reduce((acc, item) => acc + Number(item.valor || 0), 0);
 }
 
-function renderizarComprasCartao() {
+function renderizarComprasCartao(cardId) {
   const [ano, mes] = mesAtual.split('-').map(Number);
 
   const listaMes = comprasCartao.filter(compra => {
     const data = new Date(`${compra.data}T00:00:00`);
-    return data.getFullYear() === ano && (data.getMonth() + 1) === mes;
+    return compra.cardId === cardId &&
+      data.getFullYear() === ano &&
+      (data.getMonth() + 1) === mes;
   });
 
   if (!listaMes.length) {
-    listaComprasCartao.innerHTML = `<div class="empty-state">Nenhuma compra lançada no cartão neste mês.</div>`;
+    listaComprasCartao.innerHTML = `<div class="empty-state">Nenhuma compra lançada neste cartão neste mês.</div>`;
     return;
   }
 
   listaComprasCartao.innerHTML = listaMes.map(item => `
     <article class="card-purchase-item">
       <div class="tx-icon cartao">💳</div>
-
       <div class="tx-main">
         <h4>${item.descricao}</h4>
         <p class="tx-meta">
@@ -427,7 +514,6 @@ function renderizarComprasCartao() {
           <span>${new Date(`${item.data}T00:00:00`).toLocaleDateString('pt-BR')}</span>
         </p>
       </div>
-
       <div class="tx-value">
         <strong class="cartao">${formatMoney(item.valor)}</strong>
       </div>
