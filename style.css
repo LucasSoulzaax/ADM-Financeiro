@@ -1,19 +1,15 @@
 :root {
   --bg: #fcf9ff;
   --surface: #ffffff;
-  --surface-soft: #f7f1ff;
-  --surface-soft-2: #f4f7f4;
   --text: #4d445d;
   --text-soft: #9389a8;
   --primary: #b69af2;
   --primary-strong: #9a7ee6;
-  --primary-soft: #ece2ff;
   --green: #72c58e;
   --green-soft: #e7f7ec;
   --red: #ef98a3;
   --red-soft: #ffeff1;
   --yellow: #f1d785;
-  --yellow-soft: #fff8e4;
   --line: #efe7fb;
   --shadow: 0 10px 30px rgba(182, 154, 242, 0.12);
   --radius-xl: 28px;
@@ -68,7 +64,6 @@ button {
   line-height: 1;
   color: var(--primary-strong);
   font-weight: 800;
-  letter-spacing: 0.02em;
 }
 
 .brand-subtitle {
@@ -76,7 +71,6 @@ button {
   color: #77bea2;
   font-size: 1rem;
   letter-spacing: 0.24em;
-  text-transform: lowercase;
 }
 
 .topbar-actions {
@@ -120,7 +114,8 @@ button {
 .transaction-card,
 .category-item,
 .credit-card-visual,
-.card-purchase-item {
+.card-purchase-item,
+.mini-card-item {
   background: var(--surface);
   border-radius: var(--radius-xl);
   box-shadow: var(--shadow);
@@ -133,9 +128,6 @@ button {
   gap: 16px;
   margin-bottom: 18px;
   overflow: hidden;
-}
-
-.gradient-soft {
   background: linear-gradient(135deg, rgba(182, 154, 242, 0.18), rgba(255, 255, 255, 0.92)), var(--surface);
 }
 
@@ -165,7 +157,6 @@ button {
   width: 110px;
   min-width: 110px;
   height: 110px;
-  align-self: center;
 }
 
 .wallet-body {
@@ -173,7 +164,6 @@ button {
   inset: 24px 10px 14px 10px;
   border-radius: 22px;
   background: linear-gradient(145deg, #cab7ff, #9f86e9);
-  box-shadow: 0 18px 30px rgba(154, 126, 230, 0.22);
 }
 
 .wallet-pocket {
@@ -194,7 +184,6 @@ button {
   height: 18px;
   border-radius: 50%;
   background: #ffe19a;
-  box-shadow: 0 0 0 5px rgba(255, 225, 154, 0.18);
 }
 
 .panel {
@@ -217,10 +206,6 @@ button {
   font-size: 1.08rem;
 }
 
-.panel-icon {
-  color: var(--text-soft);
-}
-
 .summary-list {
   margin-top: 16px;
   display: grid;
@@ -231,7 +216,6 @@ button {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  gap: 12px;
 }
 
 .summary-row strong {
@@ -279,8 +263,6 @@ button {
   place-items: center;
   background: linear-gradient(145deg, #7bd0a5, #5fbf91);
   color: white;
-  font-size: 1.2rem;
-  flex-shrink: 0;
 }
 
 .pending-card {
@@ -320,10 +302,10 @@ button {
 .type-btn.active {
   background: linear-gradient(135deg, #c4adfb, #a88ceb);
   color: white;
-  box-shadow: 0 10px 20px rgba(182, 154, 242, 0.2);
 }
 
-.list-stack {
+.list-stack,
+.category-list {
   display: grid;
   gap: 14px;
 }
@@ -343,7 +325,7 @@ button {
   border-radius: 50%;
   display: grid;
   place-items: center;
-  font-size: 1.3rem;
+  font-size: 1.2rem;
   font-weight: 800;
 }
 
@@ -360,7 +342,6 @@ button {
 
 .tx-main h4 {
   margin: 0 0 4px;
-  font-size: 1rem;
 }
 
 .tx-meta {
@@ -374,11 +355,6 @@ button {
 
 .tx-value {
   text-align: right;
-}
-
-.tx-value strong {
-  display: block;
-  font-size: 1rem;
 }
 
 .tx-value strong.ganho {
@@ -425,10 +401,6 @@ button {
   gap: 14px;
 }
 
-.soft-form.compact {
-  margin-top: 14px;
-}
-
 .field {
   display: grid;
   gap: 8px;
@@ -451,13 +423,6 @@ button {
   outline: none;
 }
 
-.field input:focus,
-.field select:focus,
-.month-picker:focus {
-  border-color: #d7c6fb;
-  box-shadow: 0 0 0 4px rgba(182, 154, 242, 0.14);
-}
-
 .primary-btn,
 .ghost-btn,
 .menu-action {
@@ -469,7 +434,6 @@ button {
 .primary-btn {
   background: linear-gradient(135deg, #bda5f8, #9f84e9);
   color: white;
-  box-shadow: 0 14px 25px rgba(159, 132, 233, 0.24);
 }
 
 .ghost-btn {
@@ -478,13 +442,70 @@ button {
   padding: 11px 14px;
 }
 
+.small-btn {
+  padding: 10px 12px;
+  font-size: 0.84rem;
+}
+
+.cards-carousel {
+  margin-top: 14px;
+  display: grid;
+  gap: 12px;
+}
+
+.mini-card-item {
+  padding: 16px;
+  background: linear-gradient(135deg, #f5eeff, #ffffff);
+  border: 2px solid transparent;
+}
+
+.mini-card-item.active {
+  border-color: #c9b3ff;
+}
+
+.mini-card-top,
+.mini-card-bottom {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.mini-card-top strong {
+  font-size: 1rem;
+}
+
+.mini-card-sub {
+  margin: 6px 0 12px;
+  color: var(--text-soft);
+  font-size: 0.9rem;
+}
+
+.card-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.tiny-btn {
+  border-radius: 12px;
+  padding: 8px 10px;
+  background: #fff;
+  color: var(--primary-strong);
+  font-weight: 700;
+}
+
+.tiny-btn.danger {
+  color: #d96b7d;
+  background: #fff3f5;
+}
+
 .credit-card-visual {
   padding: 22px;
   margin: 18px 0;
   color: white;
   background: linear-gradient(135deg, #8f74de, #c3aef6);
-  overflow: hidden;
   position: relative;
+  overflow: hidden;
 }
 
 .credit-card-visual::after {
@@ -515,7 +536,6 @@ button {
   height: 30px;
   border-radius: 8px;
   background: linear-gradient(135deg, #ffe9a8, #ffd064);
-  display: inline-block;
 }
 
 .cc-middle {
@@ -530,17 +550,12 @@ button {
 .cc-middle p {
   margin: 8px 0 0;
   letter-spacing: 0.15em;
-  opacity: 0.95;
 }
 
 .cc-bottom span {
   display: block;
   font-size: 0.78rem;
-  opacity: 0.85;
-}
-
-.cc-bottom strong {
-  font-size: 1rem;
+  opacity: 0.9;
 }
 
 .card-stats-grid {
@@ -562,41 +577,19 @@ button {
   font-weight: 700;
 }
 
-.soft-stat strong {
-  font-size: 1.05rem;
-}
-
-.soft-stat.lilac {
-  background: #f4edff;
-}
-
-.soft-stat.green {
-  background: #edf9f1;
-}
-
-.soft-stat.pink {
-  background: #fff1f4;
-}
-
-.soft-stat.yellow {
-  background: #fff8e8;
-}
-
-.category-list {
-  display: grid;
-  gap: 12px;
-}
+.soft-stat.lilac { background: #f4edff; }
+.soft-stat.green { background: #edf9f1; }
+.soft-stat.pink { background: #fff1f4; }
+.soft-stat.yellow { background: #fff8e8; }
 
 .category-item {
   padding: 16px 18px;
   display: flex;
   justify-content: space-between;
-  align-items: center;
 }
 
 .category-type {
   color: var(--text-soft);
-  font-size: 0.92rem;
   font-weight: 700;
 }
 
@@ -611,7 +604,6 @@ button {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  color: var(--text);
 }
 
 .menu-action strong,
@@ -641,7 +633,6 @@ button {
   display: grid;
   align-items: end;
   padding: 10px 12px calc(10px + env(safe-area-inset-bottom));
-  box-shadow: 0 -8px 30px rgba(180, 158, 224, 0.08);
 }
 
 .bottom-nav.six-items {
@@ -680,7 +671,6 @@ button {
   background: linear-gradient(135deg, #bda5f8, #9e83e8);
   color: white;
   font-size: 1.7rem;
-  box-shadow: 0 18px 28px rgba(159, 132, 233, 0.28);
 }
 
 @media (min-width: 900px) {
