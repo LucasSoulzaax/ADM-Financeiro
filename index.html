@@ -30,7 +30,7 @@
             <p class="eyebrow">Olá!</p>
             <h2>Seu resumo financeiro de hoje</h2>
             <p>
-              Acompanhe ganhos, gastos e o saldo do mês em um visual mais simples e organizado.
+              Acompanhe ganhos, gastos, saldo e cartão em um visual mais simples e organizado.
             </p>
           </div>
           <div class="wallet-illustration">
@@ -58,6 +58,22 @@
             <div class="summary-row">
               <span class="summary-label balance">Saldo</span>
               <strong id="saldoResumo">R$ 0,00</strong>
+            </div>
+          </div>
+        </section>
+
+        <section class="panel card-mini-summary">
+          <div class="panel-head">
+            <h3>Cartão de crédito</h3>
+          </div>
+          <div class="summary-list">
+            <div class="summary-row">
+              <span class="summary-label balance">Fatura atual</span>
+              <strong id="resumoFaturaCartao">R$ 0,00</strong>
+            </div>
+            <div class="summary-row">
+              <span class="summary-label income">Limite disponível</span>
+              <strong id="resumoLimiteDisponivel">R$ 0,00</strong>
             </div>
           </div>
         </section>
@@ -94,6 +110,129 @@
         </div>
 
         <div class="list-stack" id="listaTransacoes"></div>
+      </section>
+
+      <section id="screen-cartao" class="screen">
+        <div class="section-header">
+          <h2>Cartão</h2>
+          <button class="ghost-btn" id="btnPagarFatura" type="button">Registrar pagamento</button>
+        </div>
+
+        <section class="credit-card-visual">
+          <div class="cc-top">
+            <span class="cc-brand">Lunay Card</span>
+            <span class="cc-chip"></span>
+          </div>
+
+          <div class="cc-middle">
+            <strong id="nomeCartao">Cartão principal</strong>
+            <p id="numeroCartao">•••• •••• •••• 4821</p>
+          </div>
+
+          <div class="cc-bottom">
+            <div>
+              <span>Fechamento</span>
+              <strong id="diaFechamento">10</strong>
+            </div>
+            <div>
+              <span>Vencimento</span>
+              <strong id="diaVencimento">17</strong>
+            </div>
+          </div>
+        </section>
+
+        <section class="panel">
+          <div class="card-stats-grid">
+            <div class="soft-stat lilac">
+              <span>Fatura atual</span>
+              <strong id="faturaAtual">R$ 0,00</strong>
+            </div>
+            <div class="soft-stat green">
+              <span>Limite disponível</span>
+              <strong id="limiteDisponivel">R$ 0,00</strong>
+            </div>
+            <div class="soft-stat pink">
+              <span>Limite usado</span>
+              <strong id="limiteUsado">0%</strong>
+            </div>
+            <div class="soft-stat yellow">
+              <span>Pago na fatura</span>
+              <strong id="valorPagoFatura">R$ 0,00</strong>
+            </div>
+          </div>
+        </section>
+
+        <section class="panel">
+          <div class="panel-head">
+            <h3>Configuração do cartão</h3>
+          </div>
+
+          <form id="formConfigCartao" class="soft-form compact">
+            <label class="field">
+              <span>Nome do cartão</span>
+              <input type="text" id="inputNomeCartao" placeholder="Ex: Nubank" />
+            </label>
+
+            <label class="field">
+              <span>Final do cartão</span>
+              <input type="text" id="inputFinalCartao" placeholder="Ex: 4821" maxlength="4" />
+            </label>
+
+            <label class="field">
+              <span>Limite total</span>
+              <input type="number" id="inputLimiteCartao" placeholder="Ex: 3000" step="0.01" />
+            </label>
+
+            <label class="field">
+              <span>Dia do fechamento</span>
+              <input type="number" id="inputFechamentoCartao" min="1" max="31" placeholder="10" />
+            </label>
+
+            <label class="field">
+              <span>Dia do vencimento</span>
+              <input type="number" id="inputVencimentoCartao" min="1" max="31" placeholder="17" />
+            </label>
+
+            <button type="submit" class="primary-btn">Salvar configuração</button>
+          </form>
+        </section>
+
+        <section class="panel">
+          <div class="panel-head">
+            <h3>Lançar compra no cartão</h3>
+          </div>
+
+          <form id="formCompraCartao" class="soft-form compact">
+            <label class="field">
+              <span>Descrição da compra</span>
+              <input type="text" id="descricaoCompraCartao" placeholder="Ex: Mercado, Farmácia..." required />
+            </label>
+
+            <label class="field">
+              <span>Valor</span>
+              <input type="number" id="valorCompraCartao" placeholder="R$ 0,00" step="0.01" required />
+            </label>
+
+            <label class="field">
+              <span>Categoria</span>
+              <input type="text" id="categoriaCompraCartao" placeholder="Ex: Mercado" required />
+            </label>
+
+            <label class="field">
+              <span>Data da compra</span>
+              <input type="date" id="dataCompraCartao" required />
+            </label>
+
+            <button type="submit" class="primary-btn">Adicionar compra</button>
+          </form>
+        </section>
+
+        <section class="panel">
+          <div class="panel-head">
+            <h3>Compras da fatura</h3>
+          </div>
+          <div class="list-stack" id="listaComprasCartao"></div>
+        </section>
       </section>
 
       <section id="screen-nova" class="screen">
@@ -206,7 +345,7 @@
       </section>
     </main>
 
-    <nav class="bottom-nav">
+    <nav class="bottom-nav six-items">
       <button class="nav-item active" data-screen="dashboard" type="button">
         <span class="nav-icon">⌂</span>
         <span>Início</span>
@@ -214,6 +353,10 @@
       <button class="nav-item" data-screen="transacoes" type="button">
         <span class="nav-icon">≣</span>
         <span>Transações</span>
+      </button>
+      <button class="nav-item" data-screen="cartao" type="button">
+        <span class="nav-icon">◈</span>
+        <span>Cartão</span>
       </button>
       <button class="nav-item fab-item" data-screen="nova" type="button">
         <span class="fab-circle">＋</span>
