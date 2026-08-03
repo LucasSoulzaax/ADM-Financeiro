@@ -2,12 +2,15 @@ const API = '/api/transacoes';
 
 let mesAtual = new Date().toISOString().slice(0, 7);
 let transacoesCache = [];
+let categoriasCache = [];
 let filtroAtual = 'todas';
 
 const filtroMes = document.getElementById('filtroMes');
 const listaTransacoes = document.getElementById('listaTransacoes');
 const listaCategorias = document.getElementById('listaCategorias');
 const statusMesInfo = document.getElementById('statusMesInfo');
+const selectTipo = document.getElementById('tipo');
+const selectCategoria = document.getElementById('categoria_id');
 
 filtroMes.value = mesAtual;
 
@@ -47,8 +50,16 @@ document.querySelectorAll('.type-btn').forEach(btn => {
   btn.addEventListener('click', () => {
     document.querySelectorAll('.type-btn').forEach(item => item.classList.remove('active'));
     btn.classList.add('active');
-    document.getElementById('tipo').value = btn.dataset.typeChoice;
+
+    const tipoEscolhido = btn.dataset.typeChoice;
+    selectTipo.value = tipoEscolhido;
+    preencherCategoriasPorTipo(tipoEscolhido);
   });
+});
+
+selectTipo.addEventListener('change', () => {
+  sincronizarBotoesTipo(selectTipo.value);
+  preencherCategoriasPorTipo(selectTipo.value);
 });
 
 async function carregarDashboard() {
@@ -76,24 +87,48 @@ async function carregarDashboard() {
 async function carregarCategorias() {
   try {
     const res = await fetch(`${API}/categorias/lista`);
-    const categorias = await res.json();
+    categoriasCache = await res.json();
 
-    const select = document.getElementById('categoria_id');
-    select.innerHTML = categorias.length
-      ? categorias.map(c => `<option value="${c.id}">${c.nome} (${c.tipo})</option>`).join('')
-      : '<option value="">Sem categorias</option>';
-
-    listaCategorias.innerHTML = categorias.length
-      ? categorias.map(c => `
-          <div class="category-item">
-            <strong>${c.nome}</strong>
-            <span class="category-type">${c.tipo}</span>
-          </div>
-        `).join('')
-      : `<div class="empty-state">Nenhuma categoria cadastrada ainda.</div>`;
+    renderizarListaCategorias();
+    preencherCategoriasPorTipo(selectTipo.value || 'ganho');
   } catch (error) {
     listaCategorias.innerHTML = `<div class="empty-state">Erro ao carregar categorias.</div>`;
+    selectCategoria.innerHTML = `<option value="">Erro ao carregar categorias</option>`;
   }
+}
+
+function renderizarListaCategorias() {
+  if (!categoriasCache.length) {
+    listaCategorias.innerHTML = `<div class="empty-state">Nenhuma categoria cadastrada ainda.</div>`;
+    return;
+  }
+
+  listaCategorias.innerHTML = categoriasCache.map(c => `
+    <div class="category-item">
+      <strong>${c.nome}</strong>
+      <span class="category-type">${c.tipo}</span>
+    </div>
+  `).join('');
+}
+
+function preencherCategoriasPorTipo(tipo) {
+  const categoriasFiltradas = categoriasCache.filter(c => c.tipo === tipo);
+
+  if (!categoriasFiltradas.length) {
+    selectCategoria.innerHTML = `<option value="">Nenhuma categoria de ${tipo} cadastrada</option>`;
+    return;
+  }
+
+  selectCategoria.innerHTML = `
+    <option value="">Selecione uma categoria</option>
+    ${categoriasFiltradas.map(c => `<option value="${c.id}">${c.nome}</option>`).join('')}
+  `;
+}
+
+function sincronizarBotoesTipo(tipo) {
+  document.querySelectorAll('.type-btn').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.typeChoice === tipo);
+  });
 }
 
 async function carregarTransacoes() {
@@ -154,13 +189,20 @@ function renderizarTransacoes() {
 document.getElementById('formTransacao').addEventListener('submit', async e => {
   e.preventDefault();
 
+  const categoriaSelecionada = selectCategoria.value;
+
+  if (!categoriaSelecionada) {
+    alert('Selecione uma categoria antes de salvar.');
+    return;
+  }
+
   const body = {
     descricao: document.getElementById('descricao').value,
     valor: parseFloat(document.getElementById('valor').value),
-    tipo: document.getElementById('tipo').value,
+    tipo: selectTipo.value,
     natureza: document.getElementById('natureza').value,
     status: document.getElementById('status').value,
-    categoria_id: document.getElementById('categoria_id').value || null,
+    categoria_id: categoriaSelecionada,
     data_transacao: document.getElementById('data_transacao').value
   };
 
@@ -172,9 +214,10 @@ document.getElementById('formTransacao').addEventListener('submit', async e => {
     });
 
     e.target.reset();
-    document.getElementById('tipo').value = 'ganho';
-    document.querySelectorAll('.type-btn').forEach(item => item.classList.remove('active'));
-    document.querySelector('[data-type-choice="ganho"]').classList.add('active');
+
+    selectTipo.value = 'ganho';
+    sincronizarBotoesTipo('ganho');
+    preencherCategoriasPorTipo('ganho');
 
     await atualizarTudo();
 
@@ -190,10 +233,15 @@ document.getElementById('formTransacao').addEventListener('submit', async e => {
 document.getElementById('formCategoria').addEventListener('submit', async e => {
   e.preventDefault();
 
-  const body = {
-    nome: document.getElementById('nomeCategoria').value,
-    tipo: document.getElementById('tipoCategoria').value
-  };
+  const nome = document.getElementById('nomeCategoria').value.trim();
+  const tipo = document.getElementById('tipoCategoria').value;
+
+  if (!tipo) {
+    alert('Selecione se a categoria é Gasto ou Ganho.');
+    return;
+  }
+
+  const body = { nome, tipo };
 
   try {
     await fetch(`${API}/categorias`, {
@@ -203,7 +251,8 @@ document.getElementById('formCategoria').addEventListener('submit', async e => {
     });
 
     e.target.reset();
-    carregarCategorias();
+    document.getElementById('tipoCategoria').value = '';
+    await carregarCategorias();
   } catch (error) {
     alert('Erro ao adicionar categoria.');
   }
@@ -249,4 +298,5 @@ async function atualizarTudo() {
   ]);
 }
 
+sincronizarBotoesTipo('ganho');
 atualizarTudo();
