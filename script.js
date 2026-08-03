@@ -1,25 +1,14 @@
 const API = '/api/transacoes';
+const API_CARTOES = '/api/cartoes';
 
 let mesAtual = new Date().toISOString().slice(0, 7);
 let transacoesCache = [];
 let categoriasCache = [];
 let filtroAtual = 'todas';
 
-let cartoes = [
-  {
-    id: 1,
-    nome: 'Nubank',
-    apelido: 'Roxinho da Mari',
-    final: '4821',
-    limite: 3000,
-    fechamento: 10,
-    vencimento: 17,
-    pagoFatura: 0
-  }
-];
-
+let cartoes = [];
 let comprasCartao = [];
-let cartaoAtivoId = 1;
+let cartaoAtivoId = null;
 
 const filtroMes = document.getElementById('filtroMes');
 const listaTransacoes = document.getElementById('listaTransacoes');
@@ -31,8 +20,14 @@ const listaComprasCartao = document.getElementById('listaComprasCartao');
 const listaCartoes = document.getElementById('listaCartoes');
 
 filtroMes.value = mesAtual;
-document.getElementById('data_transacao').value = new Date().toISOString().split('T')[0];
-document.getElementById('dataCompraCartao').value = new Date().toISOString().split('T')[0];
+
+if (document.getElementById('data_transacao')) {
+  document.getElementById('data_transacao').value = new Date().toISOString().split('T')[0];
+}
+
+if (document.getElementById('dataCompraCartao')) {
+  document.getElementById('dataCompraCartao').value = new Date().toISOString().split('T')[0];
+}
 
 document.querySelectorAll('.nav-item').forEach(btn => {
   btn.addEventListener('click', () => {
@@ -43,20 +38,24 @@ document.querySelectorAll('.nav-item').forEach(btn => {
     btn.classList.add('active');
 
     document.querySelectorAll('.screen').forEach(section => section.classList.remove('active'));
-    document.getElementById(`screen-${screen}`).classList.add('active');
+    const screenEl = document.getElementById(`screen-${screen}`);
+    if (screenEl) screenEl.classList.add('active');
   });
 });
 
-filtroMes.addEventListener('change', e => {
+filtroMes.addEventListener('change', async e => {
   mesAtual = e.target.value;
-  atualizarTudo();
-  atualizarCartaoUI();
+  await atualizarTudo();
+  await carregarCartoes();
 });
 
-document.getElementById('btnRefreshTransacoes').addEventListener('click', () => {
-  carregarTransacoes();
-  carregarDashboard();
-});
+const btnRefreshTransacoes = document.getElementById('btnRefreshTransacoes');
+if (btnRefreshTransacoes) {
+  btnRefreshTransacoes.addEventListener('click', async () => {
+    await carregarTransacoes();
+    await carregarDashboard();
+  });
+}
 
 document.querySelectorAll('.pill').forEach(btn => {
   btn.addEventListener('click', () => {
@@ -78,10 +77,12 @@ document.querySelectorAll('.type-btn').forEach(btn => {
   });
 });
 
-selectTipo.addEventListener('change', () => {
-  sincronizarBotoesTipo(selectTipo.value);
-  preencherCategoriasPorTipo(selectTipo.value);
-});
+if (selectTipo) {
+  selectTipo.addEventListener('change', () => {
+    sincronizarBotoesTipo(selectTipo.value);
+    preencherCategoriasPorTipo(selectTipo.value);
+  });
+}
 
 async function carregarDashboard() {
   try {
@@ -94,7 +95,7 @@ async function carregarDashboard() {
     document.getElementById('saldoResumo').textContent = formatMoney(data.saldo || 0);
     document.getElementById('mensagemSaldo').textContent = data.mensagem || 'Sem análise disponível.';
     statusMesInfo.textContent = Number(data.saldo || 0) >= 0 ? 'Mês positivo' : 'Mês negativo';
-  } catch {
+  } catch (error) {
     document.getElementById('mensagemSaldo').textContent = 'Não foi possível carregar o dashboard.';
     statusMesInfo.textContent = 'Erro ao carregar';
   }
@@ -106,13 +107,15 @@ async function carregarCategorias() {
     categoriasCache = await res.json();
     renderizarListaCategorias();
     preencherCategoriasPorTipo(selectTipo.value || 'ganho');
-  } catch {
+  } catch (error) {
     listaCategorias.innerHTML = `<div class="empty-state">Erro ao carregar categorias.</div>`;
     selectCategoria.innerHTML = `<option value="">Erro ao carregar categorias</option>`;
   }
 }
 
 function renderizarListaCategorias() {
+  if (!listaCategorias) return;
+
   if (!categoriasCache.length) {
     listaCategorias.innerHTML = `<div class="empty-state">Nenhuma categoria cadastrada ainda.</div>`;
     return;
@@ -127,6 +130,8 @@ function renderizarListaCategorias() {
 }
 
 function preencherCategoriasPorTipo(tipo) {
+  if (!selectCategoria) return;
+
   const categoriasFiltradas = categoriasCache.filter(c => c.tipo === tipo);
 
   if (!categoriasFiltradas.length) {
@@ -151,12 +156,16 @@ async function carregarTransacoes() {
     const res = await fetch(`${API}?mes=${mesAtual}`);
     transacoesCache = await res.json();
     renderizarTransacoes();
-  } catch {
-    listaTransacoes.innerHTML = `<div class="empty-state">Erro ao carregar transações.</div>`;
+  } catch (error) {
+    if (listaTransacoes) {
+      listaTransacoes.innerHTML = `<div class="empty-state">Erro ao carregar transações.</div>`;
+    }
   }
 }
 
 function renderizarTransacoes() {
+  if (!listaTransacoes) return;
+
   let lista = [...transacoesCache];
 
   if (filtroAtual !== 'todas') {
@@ -199,319 +208,380 @@ function renderizarTransacoes() {
   }).join('');
 }
 
-document.getElementById('formTransacao').addEventListener('submit', async e => {
-  e.preventDefault();
+const formTransacao = document.getElementById('formTransacao');
+if (formTransacao) {
+  formTransacao.addEventListener('submit', async e => {
+    e.preventDefault();
 
-  const categoriaSelecionada = selectCategoria.value;
-  if (!categoriaSelecionada) {
-    alert('Selecione uma categoria antes de salvar.');
-    return;
-  }
+    const categoriaSelecionada = selectCategoria.value;
+    if (!categoriaSelecionada) {
+      alert('Selecione uma categoria antes de salvar.');
+      return;
+    }
 
-  const body = {
-    descricao: document.getElementById('descricao').value,
-    valor: parseFloat(document.getElementById('valor').value),
-    tipo: selectTipo.value,
-    natureza: document.getElementById('natureza').value,
-    status: document.getElementById('status').value,
-    categoria_id: categoriaSelecionada,
-    data_transacao: document.getElementById('data_transacao').value
-  };
+    const body = {
+      descricao: document.getElementById('descricao').value,
+      valor: parseFloat(document.getElementById('valor').value),
+      tipo: selectTipo.value,
+      natureza: document.getElementById('natureza').value,
+      status: document.getElementById('status').value,
+      categoria_id: categoriaSelecionada,
+      data_transacao: document.getElementById('data_transacao').value
+    };
 
-  try {
-    await fetch(API, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body)
-    });
+    try {
+      await fetch(API, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+      });
 
-    e.target.reset();
-    document.getElementById('data_transacao').value = new Date().toISOString().split('T')[0];
-    selectTipo.value = 'ganho';
-    sincronizarBotoesTipo('ganho');
-    preencherCategoriasPorTipo('ganho');
+      e.target.reset();
+      document.getElementById('data_transacao').value = new Date().toISOString().split('T')[0];
+      selectTipo.value = 'ganho';
+      sincronizarBotoesTipo('ganho');
+      preencherCategoriasPorTipo('ganho');
 
-    await atualizarTudo();
+      await atualizarTudo();
 
-    document.querySelectorAll('.nav-item').forEach(item => item.classList.remove('active'));
-    document.querySelector('.nav-item[data-screen="transacoes"]').classList.add('active');
-    document.querySelectorAll('.screen').forEach(section => section.classList.remove('active'));
-    document.getElementById('screen-transacoes').classList.add('active');
-  } catch {
-    alert('Erro ao salvar transação.');
-  }
-});
+      document.querySelectorAll('.nav-item').forEach(item => item.classList.remove('active'));
+      const navTransacoes = document.querySelector('.nav-item[data-screen="transacoes"]');
+      if (navTransacoes) navTransacoes.classList.add('active');
 
-document.getElementById('formCategoria').addEventListener('submit', async e => {
-  e.preventDefault();
-
-  const nome = document.getElementById('nomeCategoria').value.trim();
-  const tipo = document.getElementById('tipoCategoria').value;
-
-  if (!tipo) {
-    alert('Selecione se a categoria é Gasto ou Ganho.');
-    return;
-  }
-
-  try {
-    await fetch(`${API}/categorias`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ nome, tipo })
-    });
-
-    e.target.reset();
-    document.getElementById('tipoCategoria').value = '';
-    await carregarCategorias();
-  } catch {
-    alert('Erro ao adicionar categoria.');
-  }
-});
-
-document.getElementById('btnExportarTSV').addEventListener('click', async () => {
-  try {
-    const res = await fetch(`${API}/tsv/${mesAtual}`);
-    const blob = await res.blob();
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `financeiro_${mesAtual}.tsv`;
-    a.click();
-    URL.revokeObjectURL(url);
-  } catch {
-    alert('Erro ao exportar TSV.');
-  }
-});
-
-document.getElementById('formNovoCartao').addEventListener('submit', e => {
-  e.preventDefault();
-
-  const novoCartao = {
-    id: Date.now(),
-    nome: document.getElementById('inputNomeCartao').value.trim(),
-    apelido: document.getElementById('inputApelidoCartao').value.trim(),
-    final: document.getElementById('inputFinalCartao').value.trim(),
-    limite: parseFloat(document.getElementById('inputLimiteCartao').value),
-    fechamento: parseInt(document.getElementById('inputFechamentoCartao').value, 10),
-    vencimento: parseInt(document.getElementById('inputVencimentoCartao').value, 10),
-    pagoFatura: 0
-  };
-
-  cartoes.unshift(novoCartao);
-  cartaoAtivoId = novoCartao.id;
-  e.target.reset();
-  renderizarListaCartoes();
-  atualizarCartaoUI();
-});
-
-document.getElementById('btnNovoCartao').addEventListener('click', () => {
-  document.getElementById('inputNomeCartao').focus();
-});
-
-document.getElementById('formCompraCartao').addEventListener('submit', e => {
-  e.preventDefault();
-
-  const cartaoAtivo = getCartaoAtivo();
-  if (!cartaoAtivo) {
-    alert('Cadastre um cartão primeiro.');
-    return;
-  }
-
-  const descricao = document.getElementById('descricaoCompraCartao').value.trim();
-  const valor = parseFloat(document.getElementById('valorCompraCartao').value);
-  const categoria = document.getElementById('categoriaCompraCartao').value.trim();
-  const data = document.getElementById('dataCompraCartao').value;
-
-  if (!descricao || Number.isNaN(valor) || !categoria || !data) {
-    alert('Preencha todos os dados da compra.');
-    return;
-  }
-
-  comprasCartao.unshift({
-    id: Date.now(),
-    cardId: cartaoAtivo.id,
-    descricao,
-    valor,
-    categoria,
-    data
+      document.querySelectorAll('.screen').forEach(section => section.classList.remove('active'));
+      const screen = document.getElementById('screen-transacoes');
+      if (screen) screen.classList.add('active');
+    } catch (error) {
+      alert('Erro ao salvar transação.');
+    }
   });
+}
 
-  e.target.reset();
-  document.getElementById('dataCompraCartao').value = new Date().toISOString().split('T')[0];
-  atualizarCartaoUI();
-});
+const formCategoria = document.getElementById('formCategoria');
+if (formCategoria) {
+  formCategoria.addEventListener('submit', async e => {
+    e.preventDefault();
 
-document.getElementById('btnPagarFatura').addEventListener('click', () => {
-  const cartao = getCartaoAtivo();
-  if (!cartao) {
-    alert('Nenhum cartão selecionado.');
-    return;
+    const nome = document.getElementById('nomeCategoria').value.trim();
+    const tipo = document.getElementById('tipoCategoria').value;
+
+    if (!tipo) {
+      alert('Selecione se a categoria é Gasto ou Ganho.');
+      return;
+    }
+
+    try {
+      await fetch(`${API}/categorias`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ nome, tipo })
+      });
+
+      e.target.reset();
+      document.getElementById('tipoCategoria').value = '';
+      await carregarCategorias();
+    } catch (error) {
+      alert('Erro ao adicionar categoria.');
+    }
+  });
+}
+
+const btnExportarTSV = document.getElementById('btnExportarTSV');
+if (btnExportarTSV) {
+  btnExportarTSV.addEventListener('click', async () => {
+    try {
+      const res = await fetch(`${API}/tsv/${mesAtual}`);
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `financeiro_${mesAtual}.tsv`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      alert('Erro ao exportar TSV.');
+    }
+  });
+}
+
+const formNovoCartao = document.getElementById('formNovoCartao');
+if (formNovoCartao) {
+  formNovoCartao.addEventListener('submit', async e => {
+    e.preventDefault();
+
+    const body = {
+      nome: document.getElementById('inputNomeCartao').value.trim(),
+      apelido: document.getElementById('inputApelidoCartao').value.trim(),
+      final_cartao: document.getElementById('inputFinalCartao').value.trim(),
+      limite_total: parseFloat(document.getElementById('inputLimiteCartao').value),
+      dia_fechamento: parseInt(document.getElementById('inputFechamentoCartao').value, 10),
+      dia_vencimento: parseInt(document.getElementById('inputVencimentoCartao').value, 10)
+    };
+
+    try {
+      const res = await fetch(API_CARTOES, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+      });
+
+      const novoCartao = await res.json();
+      cartaoAtivoId = novoCartao.id;
+
+      e.target.reset();
+      await carregarCartoes();
+    } catch (error) {
+      alert('Erro ao adicionar cartão.');
+    }
+  });
+}
+
+const btnNovoCartao = document.getElementById('btnNovoCartao');
+if (btnNovoCartao) {
+  btnNovoCartao.addEventListener('click', () => {
+    const input = document.getElementById('inputNomeCartao');
+    if (input) input.focus();
+  });
+}
+
+const formCompraCartao = document.getElementById('formCompraCartao');
+if (formCompraCartao) {
+  formCompraCartao.addEventListener('submit', async e => {
+    e.preventDefault();
+
+    const cartaoAtivo = getCartaoAtivo();
+    if (!cartaoAtivo) {
+      alert('Cadastre um cartão primeiro.');
+      return;
+    }
+
+    const body = {
+      descricao: document.getElementById('descricaoCompraCartao').value.trim(),
+      valor: parseFloat(document.getElementById('valorCompraCartao').value),
+      categoria: document.getElementById('categoriaCompraCartao').value.trim(),
+      data_compra: document.getElementById('dataCompraCartao').value
+    };
+
+    try {
+      await fetch(`${API_CARTOES}/${cartaoAtivo.id}/compras`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+      });
+
+      e.target.reset();
+      document.getElementById('dataCompraCartao').value = new Date().toISOString().split('T')[0];
+      await atualizarCartaoUI();
+    } catch (error) {
+      alert('Erro ao lançar compra no cartão.');
+    }
+  });
+}
+
+const btnPagarFatura = document.getElementById('btnPagarFatura');
+if (btnPagarFatura) {
+  btnPagarFatura.addEventListener('click', async () => {
+    const cartao = getCartaoAtivo();
+    if (!cartao) {
+      alert('Nenhum cartão selecionado.');
+      return;
+    }
+
+    try {
+      const resumo = await buscarResumoCartao(cartao.id);
+      const restante = Number(resumo.restante_fatura || 0);
+
+      if (restante <= 0) {
+        alert('A fatura atual já está quitada.');
+        return;
+      }
+
+      const valor = prompt(`Informe o valor pago da fatura atual (restante: ${formatMoney(restante)})`);
+      if (valor === null) return;
+
+      const pagamento = parseFloat(valor.replace(',', '.'));
+
+      if (Number.isNaN(pagamento) || pagamento <= 0) {
+        alert('Informe um valor válido.');
+        return;
+      }
+
+      await fetch(`${API_CARTOES}/${cartao.id}/pagamentos`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          valor: pagamento,
+          data_pagamento: new Date().toISOString().split('T')[0],
+          referencia_mes: mesAtual
+        })
+      });
+
+      await atualizarCartaoUI();
+    } catch (error) {
+      alert('Erro ao registrar pagamento da fatura.');
+    }
+  });
+}
+
+async function carregarCartoes() {
+  try {
+    const res = await fetch(API_CARTOES);
+    cartoes = await res.json();
+
+    if (!cartoes.length) {
+      cartaoAtivoId = null;
+      comprasCartao = [];
+      atualizarCartaoUIVazio();
+      renderizarListaCartoes();
+      return;
+    }
+
+    if (!cartaoAtivoId || !cartoes.some(c => c.id === cartaoAtivoId)) {
+      cartaoAtivoId = cartoes[0].id;
+    }
+
+    renderizarListaCartoes();
+    await atualizarCartaoUI();
+  } catch (error) {
+    atualizarCartaoUIVazio();
+    renderizarListaCartoesErro();
   }
-
-  const fatura = calcularFaturaAtual(cartao.id);
-  const restante = Math.max(fatura - cartao.pagoFatura, 0);
-
-  if (restante <= 0) {
-    alert('A fatura atual já está quitada.');
-    return;
-  }
-
-  const valor = prompt(`Informe o valor pago da fatura atual (restante: ${formatMoney(restante)})`);
-  if (valor === null) return;
-
-  const pagamento = parseFloat(valor.replace(',', '.'));
-
-  if (Number.isNaN(pagamento) || pagamento <= 0) {
-    alert('Informe um valor válido.');
-    return;
-  }
-
-  cartao.pagoFatura += pagamento;
-  if (cartao.pagoFatura > fatura) {
-    cartao.pagoFatura = fatura;
-  }
-
-  atualizarCartaoUI();
-});
+}
 
 function getCartaoAtivo() {
   return cartoes.find(c => c.id === cartaoAtivoId) || null;
 }
 
 function renderizarListaCartoes() {
+  if (!listaCartoes) return;
+
   if (!cartoes.length) {
     listaCartoes.innerHTML = `<div class="empty-state">Nenhum cartão cadastrado.</div>`;
     return;
   }
 
-  listaCartoes.innerHTML = cartoes.map(cartao => {
-    const fatura = calcularFaturaAtual(cartao.id);
-    const disponivel = Math.max(cartao.limite - fatura, 0);
-
-    return `
-      <div class="mini-card-item ${cartao.id === cartaoAtivoId ? 'active' : ''}">
-        <div class="mini-card-top">
-          <strong>${cartao.nome}</strong>
-          <div class="card-actions">
-            <button class="tiny-btn" type="button" onclick="selecionarCartao(${cartao.id})">Abrir</button>
-            <button class="tiny-btn danger" type="button" onclick="removerCartao(${cartao.id})">Remover</button>
-          </div>
-        </div>
-        <p class="mini-card-sub">${cartao.apelido} • Final ${cartao.final}</p>
-        <div class="mini-card-bottom">
-          <span>Fatura: <strong>${formatMoney(fatura)}</strong></span>
-          <span>Disponível: <strong>${formatMoney(disponivel)}</strong></span>
+  listaCartoes.innerHTML = cartoes.map(cartao => `
+    <div class="mini-card-item ${cartao.id === cartaoAtivoId ? 'active' : ''}">
+      <div class="mini-card-top">
+        <strong>${cartao.nome}</strong>
+        <div class="card-actions">
+          <button class="tiny-btn" type="button" onclick="selecionarCartao(${cartao.id})">Abrir</button>
+          <button class="tiny-btn danger" type="button" onclick="removerCartao(${cartao.id})">Remover</button>
         </div>
       </div>
-    `;
-  }).join('');
+      <p class="mini-card-sub">${cartao.apelido} • Final ${cartao.final_cartao}</p>
+      <div class="mini-card-bottom">
+        <span>Limite: <strong>${formatMoney(cartao.limite_total)}</strong></span>
+        <span>Fecha dia <strong>${cartao.dia_fechamento}</strong></span>
+      </div>
+    </div>
+  `).join('');
 }
 
-function selecionarCartao(id) {
+function renderizarListaCartoesErro() {
+  if (!listaCartoes) return;
+  listaCartoes.innerHTML = `<div class="empty-state">Erro ao carregar cartões.</div>`;
+}
+
+async function selecionarCartao(id) {
   cartaoAtivoId = id;
   renderizarListaCartoes();
-  atualizarCartaoUI();
+  await atualizarCartaoUI();
 }
 
-function removerCartao(id) {
+async function removerCartao(id) {
   const confirmar = confirm('Deseja realmente remover este cartão?');
   if (!confirmar) return;
 
-  cartoes = cartoes.filter(c => c.id !== id);
-  comprasCartao = comprasCartao.filter(c => c.cardId !== id);
-
-  if (!cartoes.length) {
-    cartaoAtivoId = null;
-  } else if (!cartoes.some(c => c.id === cartaoAtivoId)) {
-    cartaoAtivoId = cartoes[0].id;
+  try {
+    await fetch(`${API_CARTOES}/${id}`, { method: 'DELETE' });
+    await carregarCartoes();
+  } catch (error) {
+    alert('Erro ao remover cartão.');
   }
-
-  renderizarListaCartoes();
-  atualizarCartaoUI();
 }
 
 window.selecionarCartao = selecionarCartao;
 window.removerCartao = removerCartao;
 
-function atualizarCartaoUI() {
-  renderizarListaCartoes();
+async function buscarResumoCartao(cardId) {
+  const res = await fetch(`${API_CARTOES}/${cardId}/resumo?mes=${mesAtual}`);
+  return await res.json();
+}
 
+async function carregarComprasCartao(cardId) {
+  const res = await fetch(`${API_CARTOES}/${cardId}/compras?mes=${mesAtual}`);
+  comprasCartao = await res.json();
+}
+
+async function atualizarCartaoUI() {
   const cartao = getCartaoAtivo();
 
   if (!cartao) {
-    document.getElementById('nomeCartao').textContent = 'Sem cartão';
-    document.getElementById('apelidoCartao').textContent = 'Cadastre um cartão';
-    document.getElementById('numeroCartao').textContent = '•••• •••• •••• ••••';
-    document.getElementById('diaFechamento').textContent = '--';
-    document.getElementById('diaVencimento').textContent = '--';
-    document.getElementById('faturaAtual').textContent = formatMoney(0);
-    document.getElementById('limiteDisponivel').textContent = formatMoney(0);
-    document.getElementById('limiteUsado').textContent = '0%';
-    document.getElementById('valorPagoFatura').textContent = formatMoney(0);
-    document.getElementById('resumoFaturaCartao').textContent = formatMoney(0);
-    document.getElementById('resumoLimiteDisponivel').textContent = formatMoney(0);
-    listaComprasCartao.innerHTML = `<div class="empty-state">Cadastre um cartão para começar.</div>`;
+    atualizarCartaoUIVazio();
     return;
   }
 
-  document.getElementById('nomeCartao').textContent = cartao.nome;
-  document.getElementById('apelidoCartao').textContent = cartao.apelido;
-  document.getElementById('numeroCartao').textContent = `•••• •••• •••• ${cartao.final}`;
-  document.getElementById('diaFechamento').textContent = cartao.fechamento;
-  document.getElementById('diaVencimento').textContent = cartao.vencimento;
+  try {
+    await carregarComprasCartao(cartao.id);
+    const resumo = await buscarResumoCartao(cartao.id);
 
-  const fatura = calcularFaturaAtual(cartao.id);
-  const pago = Math.min(cartao.pagoFatura, fatura);
-  const disponivel = Math.max(cartao.limite - fatura, 0);
-  const uso = cartao.limite > 0 ? ((fatura / cartao.limite) * 100) : 0;
+    document.getElementById('nomeCartao').textContent = cartao.nome;
+    document.getElementById('apelidoCartao').textContent = cartao.apelido;
+    document.getElementById('numeroCartao').textContent = `•••• •••• •••• ${cartao.final_cartao}`;
+    document.getElementById('diaFechamento').textContent = cartao.dia_fechamento;
+    document.getElementById('diaVencimento').textContent = cartao.dia_vencimento;
 
-  document.getElementById('faturaAtual').textContent = formatMoney(fatura);
-  document.getElementById('limiteDisponivel').textContent = formatMoney(disponivel);
-  document.getElementById('limiteUsado').textContent = `${uso.toFixed(0)}%`;
-  document.getElementById('valorPagoFatura').textContent = formatMoney(pago);
-  document.getElementById('resumoFaturaCartao').textContent = formatMoney(fatura);
-  document.getElementById('resumoLimiteDisponivel').textContent = formatMoney(disponivel);
+    document.getElementById('faturaAtual').textContent = formatMoney(resumo.fatura_atual || 0);
+    document.getElementById('limiteDisponivel').textContent = formatMoney(resumo.limite_disponivel || 0);
+    document.getElementById('limiteUsado').textContent = `${Number(resumo.percentual_usado || 0).toFixed(0)}%`;
+    document.getElementById('valorPagoFatura').textContent = formatMoney(resumo.total_pago || 0);
 
-  renderizarComprasCartao(cartao.id);
+    document.getElementById('resumoFaturaCartao').textContent = formatMoney(resumo.fatura_atual || 0);
+    document.getElementById('resumoLimiteDisponivel').textContent = formatMoney(resumo.limite_disponivel || 0);
+
+    renderizarComprasCartao();
+  } catch (error) {
+    atualizarCartaoUIVazio('Erro ao carregar dados do cartão.');
+  }
 }
 
-function calcularFaturaAtual(cardId) {
-  const [ano, mes] = mesAtual.split('-').map(Number);
+function atualizarCartaoUIVazio(mensagem = 'Cadastre um cartão para começar.') {
+  if (document.getElementById('nomeCartao')) document.getElementById('nomeCartao').textContent = 'Sem cartão';
+  if (document.getElementById('apelidoCartao')) document.getElementById('apelidoCartao').textContent = 'Cadastre um cartão';
+  if (document.getElementById('numeroCartao')) document.getElementById('numeroCartao').textContent = '•••• •••• •••• ••••';
+  if (document.getElementById('diaFechamento')) document.getElementById('diaFechamento').textContent = '--';
+  if (document.getElementById('diaVencimento')) document.getElementById('diaVencimento').textContent = '--';
 
-  return comprasCartao
-    .filter(compra => {
-      const data = new Date(`${compra.data}T00:00:00`);
-      return compra.cardId === cardId &&
-        data.getFullYear() === ano &&
-        (data.getMonth() + 1) === mes;
-    })
-    .reduce((acc, item) => acc + Number(item.valor || 0), 0);
+  if (document.getElementById('faturaAtual')) document.getElementById('faturaAtual').textContent = formatMoney(0);
+  if (document.getElementById('limiteDisponivel')) document.getElementById('limiteDisponivel').textContent = formatMoney(0);
+  if (document.getElementById('limiteUsado')) document.getElementById('limiteUsado').textContent = '0%';
+  if (document.getElementById('valorPagoFatura')) document.getElementById('valorPagoFatura').textContent = formatMoney(0);
+  if (document.getElementById('resumoFaturaCartao')) document.getElementById('resumoFaturaCartao').textContent = formatMoney(0);
+  if (document.getElementById('resumoLimiteDisponivel')) document.getElementById('resumoLimiteDisponivel').textContent = formatMoney(0);
+
+  if (listaComprasCartao) {
+    listaComprasCartao.innerHTML = `<div class="empty-state">${mensagem}</div>`;
+  }
 }
 
-function renderizarComprasCartao(cardId) {
-  const [ano, mes] = mesAtual.split('-').map(Number);
+function renderizarComprasCartao() {
+  if (!listaComprasCartao) return;
 
-  const listaMes = comprasCartao.filter(compra => {
-    const data = new Date(`${compra.data}T00:00:00`);
-    return compra.cardId === cardId &&
-      data.getFullYear() === ano &&
-      (data.getMonth() + 1) === mes;
-  });
-
-  if (!listaMes.length) {
+  if (!comprasCartao.length) {
     listaComprasCartao.innerHTML = `<div class="empty-state">Nenhuma compra lançada neste cartão neste mês.</div>`;
     return;
   }
 
-  listaComprasCartao.innerHTML = listaMes.map(item => `
+  listaComprasCartao.innerHTML = comprasCartao.map(item => `
     <article class="card-purchase-item">
       <div class="tx-icon cartao">💳</div>
       <div class="tx-main">
         <h4>${item.descricao}</h4>
         <p class="tx-meta">
-          <span>${item.categoria}</span>
+          <span>${item.categoria || 'Sem categoria'}</span>
           <span>•</span>
-          <span>${new Date(`${item.data}T00:00:00`).toLocaleDateString('pt-BR')}</span>
+          <span>${new Date(item.data_compra).toLocaleDateString('pt-BR')}</span>
         </p>
       </div>
       <div class="tx-value">
@@ -548,4 +618,4 @@ async function atualizarTudo() {
 
 sincronizarBotoesTipo('ganho');
 atualizarTudo();
-atualizarCartaoUI();
+carregarCartoes();
